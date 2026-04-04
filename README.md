@@ -2,8 +2,6 @@
 
 Subscribe to any public iCalendar (.ics) URL and display upcoming events on your Vestaboard — with automatic board alerts before events start.
 
-![Calendar Subscription Display](./docs/board-display.png)
-
 **→ [Setup Guide](./docs/SETUP.md)**
 
 ## Overview
