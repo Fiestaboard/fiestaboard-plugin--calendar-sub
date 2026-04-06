@@ -26,6 +26,7 @@ jobs:
         run: |
           pip install -r fiestaboard-core/requirements.txt
           pip install pytest pytest-cov
+          pip install icalendar recurring-ical-events
 
       - name: Validate manifest
         run: |
