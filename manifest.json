@@ -1,7 +1,7 @@
 {
   "id": "calendar_sub",
   "name": "Calendar Subscription",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Subscribe to a public iCalendar (.ics) URL and display upcoming events on your board.",
   "author": "FiestaBoard Team",
   "repository": "https://github.com/FiestaBoard/FiestaBoard",
@@ -9,9 +9,7 @@
   "icon": "calendar",
   "category": "utility",
   "supports_triggers": true,
-
   "min_refresh_seconds": 60,
-
   "settings_schema": {
     "type": "object",
     "properties": {
@@ -65,9 +63,10 @@
         "default": false
       }
     },
-    "required": ["calendar_url"]
+    "required": [
+      "calendar_url"
+    ]
   },
-
   "env_vars": [
     {
       "name": "CALENDAR_SUB_URL",
@@ -81,11 +80,14 @@
       "default": "America/Los_Angeles"
     }
   ],
-
   "variables": {
     "groups": {
-      "next_event": { "label": "Next Event" },
-      "upcoming": { "label": "Upcoming Events" }
+      "next_event": {
+        "label": "Next Event"
+      },
+      "upcoming": {
+        "label": "Upcoming Events"
+      }
     },
     "simple": {
       "event_name": {
@@ -155,11 +157,16 @@
     "arrays": {
       "events": {
         "label_field": "name",
-        "item_fields": ["name", "start", "start_date", "end", "location"]
+        "item_fields": [
+          "name",
+          "start",
+          "start_date",
+          "end",
+          "location"
+        ]
       }
     }
   },
-
   "max_lengths": {
     "events.*.name": 22,
     "events.*.start": 10,
@@ -167,7 +174,6 @@
     "events.*.end": 10,
     "events.*.location": 22
   },
-
   "screenshots": [
     {
       "src": "docs/board-display.png",
@@ -175,5 +181,43 @@
       "caption": "Upcoming event triggered on the board before the event starts",
       "primary": true
     }
-  ]
+  ],
+  "demo": {
+    "name": "Calendar Demo",
+    "device_type": "flagship",
+    "template": [
+      "Next Event",
+      "{{calendar_sub.event_name}}",
+      "{{calendar_sub.event_start_date}}",
+      "{{calendar_sub.event_start}}",
+      "{{calendar_sub.event_location}}",
+      "Events {{calendar_sub.event_count}}"
+    ],
+    "line_metadata": [
+      {
+        "alignment": "center",
+        "wrap": false
+      },
+      {
+        "alignment": "center",
+        "wrap": true
+      },
+      {
+        "alignment": "center",
+        "wrap": false
+      },
+      {
+        "alignment": "center",
+        "wrap": false
+      },
+      {
+        "alignment": "center",
+        "wrap": false
+      },
+      {
+        "alignment": "center",
+        "wrap": false
+      }
+    ]
+  }
 }
