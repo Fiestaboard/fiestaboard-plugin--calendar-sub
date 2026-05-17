@@ -1,7 +1,7 @@
 {
   "id": "calendar_sub",
   "name": "Calendar Subscription",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Subscribe to a public iCalendar (.ics) URL and display upcoming events on your board.",
   "author": "FiestaBoard Team",
   "repository": "https://github.com/FiestaBoard/FiestaBoard",
@@ -183,41 +183,64 @@
     }
   ],
   "demo": {
-    "name": "Calendar Demo",
-    "device_type": "flagship",
-    "template": [
-      "Next Event",
-      "{{calendar_sub.event_name}}",
-      "{{calendar_sub.event_start_date}}",
-      "{{calendar_sub.event_start}}",
-      "{{calendar_sub.event_location}}",
-      "Events {{calendar_sub.event_count}}"
-    ],
-    "line_metadata": [
-      {
-        "alignment": "center",
-        "wrap": false
-      },
-      {
-        "alignment": "center",
-        "wrap": true
-      },
-      {
-        "alignment": "center",
-        "wrap": false
-      },
-      {
-        "alignment": "center",
-        "wrap": false
-      },
-      {
-        "alignment": "center",
-        "wrap": false
-      },
-      {
-        "alignment": "center",
-        "wrap": false
-      }
-    ]
+    "flagship": {
+      "name": "Calendar Demo",
+      "template": [
+        "Next Event",
+        "{{calendar_sub.event_name}}",
+        "{{calendar_sub.event_start_date}}",
+        "{{calendar_sub.event_start}}",
+        "{{calendar_sub.event_location}}",
+        "Events {{calendar_sub.event_count}}"
+      ],
+      "line_metadata": [
+        {
+          "alignment": "center",
+          "wrap": false
+        },
+        {
+          "alignment": "center",
+          "wrap": true
+        },
+        {
+          "alignment": "center",
+          "wrap": false
+        },
+        {
+          "alignment": "center",
+          "wrap": false
+        },
+        {
+          "alignment": "center",
+          "wrap": false
+        },
+        {
+          "alignment": "center",
+          "wrap": false
+        }
+      ]
+    },
+    "note": {
+      "name": "Calendar (Note)",
+      "template": [
+        "{{calendar_sub.event_name}}",
+        "{{calendar_sub.event_start_date}}",
+        "{{calendar_sub.event_start}}"
+      ],
+      "line_metadata": [
+        {
+          "alignment": "left",
+          "wrap": true
+        },
+        {
+          "alignment": "left",
+          "wrap": false
+        },
+        {
+          "alignment": "left",
+          "wrap": false
+        }
+      ]
+    }
   }
 }
