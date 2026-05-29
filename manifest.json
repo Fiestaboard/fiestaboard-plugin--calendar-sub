@@ -57,6 +57,12 @@
         "default": 300,
         "minimum": 60
       },
+      "trigger_page_id": {
+        "type": "string",
+        "title": "Trigger Page",
+        "description": "Page to display when a calendar event trigger fires. Leave blank to use the built-in event display. The page must be a template page using {{calendar_sub.*}} variables.",
+        "ui:widget": "page-picker"
+      },
       "enabled": {
         "type": "boolean",
         "title": "Enabled",
