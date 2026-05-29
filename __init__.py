@@ -206,7 +206,17 @@ class CalendarSubPlugin(PluginBase):
         tz = pytz.timezone(tz_str)
         max_events = int(self.config.get("max_events", 5))
 
-        response = requests.get(url, timeout=15)
+        response = requests.get(
+            url,
+            timeout=15,
+            headers={
+                "User-Agent": (
+                    "FiestaBoard Calendar Subscription Plugin/1.0 "
+                    "(+https://github.com/Fiestaboard/fiestaboard-plugin--calendar-sub)"
+                )
+            },
+            allow_redirects=True,
+        )
         response.raise_for_status()
 
         cal = Calendar.from_ical(response.content)

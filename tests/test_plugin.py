@@ -279,6 +279,30 @@ class TestFetchData:
         for var_name in simple_vars:
             assert var_name in result.data, f"Variable '{var_name}' missing from data"
 
+    @patch("calendar_sub.requests.get")
+    def test_request_sends_user_agent_header(self, mock_get, sample_manifest, sample_config):
+        """Requests must include a User-Agent so servers don't return 403."""
+        mock_get.return_value = _make_mock_response(SINGLE_EVENT_ICS)
+        plugin = CalendarSubPlugin(sample_manifest)
+        plugin.config = {**sample_config, "timezone": "UTC"}
+        plugin.fetch_data()
+
+        _, kwargs = mock_get.call_args
+        headers = kwargs.get("headers", {})
+        assert "User-Agent" in headers, "Request must include a User-Agent header"
+        assert "FiestaBoard" in headers["User-Agent"]
+
+    @patch("calendar_sub.requests.get")
+    def test_request_follows_redirects(self, mock_get, sample_manifest, sample_config):
+        """allow_redirects=True so short-URL calendar links resolve correctly."""
+        mock_get.return_value = _make_mock_response(SINGLE_EVENT_ICS)
+        plugin = CalendarSubPlugin(sample_manifest)
+        plugin.config = {**sample_config, "timezone": "UTC"}
+        plugin.fetch_data()
+
+        _, kwargs = mock_get.call_args
+        assert kwargs.get("allow_redirects", True) is True
+
 
 # ---------------------------------------------------------------------------
 # fetch_data — error cases
