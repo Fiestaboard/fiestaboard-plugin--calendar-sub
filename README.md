@@ -30,17 +30,24 @@ Recurring events (weekly meetings, classes, etc.) are fully expanded, so every o
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `{{event_count}}` | Number of upcoming events loaded | `3` |
-| `{{events[0].name}}` | Name of the first event | `Weekly Standup` |
-| `{{events[0].start}}` | Start time of the first event | `9:00 AM` |
-| `{{events[0].start_date}}` | Start date of the first event | `Apr 7` |
-| `{{events[0].end}}` | End time of the first event | `9:30 AM` |
-| `{{events[0].location}}` | Location of the first event | `Conference Room` |
+| `{{event2_name}}` | Name of the event after the next one | `Design Review` |
+| `{{event2_start}}` | Start time of the event after the next one | `4:00 PM` |
+| `{{event2_start_date}}` | Start date of the event after the next one | `Apr 7` |
+| `{{event2_end}}` | End time of the event after the next one | `5:00 PM` |
+| `{{event2_location}}` | Location of the event after the next one | `Room 105` |
+| `{{events.0.name}}` | Name of the first event (same as `event_name`) | `Weekly Standup` |
+| `{{events.0.start}}` | Start time of the first event | `9:00 AM` |
+| `{{events.0.start_date}}` | Start date of the first event | `Apr 7` |
+| `{{events.0.end}}` | End time of the first event | `9:30 AM` |
+| `{{events.0.location}}` | Location of the first event | `Conference Room` |
 
-Use `events[1]`, `events[2]`, etc. for additional events up to `max_events`.
+Events are sorted by start time and capped at `max_events`. For a longer
+list, index into the array directly: `{{events.1.name}}`, `{{events.2.name}}`,
+etc. — see "Multi-event templates" below.
 
 ## Example Templates
 
-**Next event display:**
+**Countdown alert (recommended for the Trigger Page):**
 ```
 UPCOMING EVENT
 {{event_name}}
@@ -50,14 +57,19 @@ UPCOMING EVENT
 IN {{minutes_until}} MIN
 ```
 
-**Two-event summary:**
+Set this as your **Trigger Page** and set **Lead Time** to e.g. 5 min — the
+page is re-rendered every loop tick while the event is within the window, so
+`{{minutes_until}}` naturally counts down `5 → 4 → 3 → 2 → 1` as the event
+approaches.
+
+**Now / Next (two events at a glance):**
 ```
 NEXT UP
-{{events[0].name}}
-{{events[0].start_date}} {{events[0].start}}
+{{event_name}}
+{{event_start_date}} {{event_start}}
 THEN
-{{events[1].name}}
-{{events[1].start_date}}
+{{event2_name}}
+{{event2_start_date}} {{event2_start}}
 ```
 
 **Simple reminder:**
@@ -68,16 +80,32 @@ STARTS AT {{event_start}}
 ON {{event_start_date}}
 ```
 
+### Multi-event templates
+
+For three or more upcoming events, index into the `events` array directly
+(0-based, sorted by start time, capped at `max_events`):
+
+```
+UP NEXT
+{{events.0.name}}  {{events.0.start}}
+{{events.1.name}}  {{events.1.start}}
+{{events.2.name}}  {{events.2.start}}
+```
+
+An indexed slot that falls past the end of the list renders as `???` — keep
+`max_events` set high enough to fill your template.
+
 ## Configuration
 
 | Setting | Description | Default |
 |---------|-------------|---------|
 | `calendar_url` | Public .ics or webcal:// URL (**required**) | — |
-| `minutes_before` | Minutes before an event to trigger the board | `15` |
-| `display_duration_minutes` | How long the trigger message stays on the board (0 = indefinite) | `0` |
+| `minutes_before` | Lead time before an event — picks one of 1/2/3/5/10/15/30/60 min | `5` |
+| `display_duration_minutes` | How long the alert stays on the board after the event ends — picks one of 0 (until next page) / 5 / 10 / 15 / 30 / 60 / 120 min | `15` |
 | `timezone` | IANA timezone for all-day events and time display | `America/Los_Angeles` |
 | `max_events` | Maximum number of upcoming events to load | `5` |
 | `refresh_seconds` | How often to re-fetch the calendar URL (min: 60) | `300` |
+| `trigger_page_id` | Page to display when an event trigger fires. Picked from a dropdown of your pages — must be a **template** page using `{{calendar_sub.*}}` variables. Leave unset to use the built-in 6-line layout. | — |
 
 ### Environment Variables
 
