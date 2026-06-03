@@ -621,3 +621,90 @@ class TestManifestMetadata:
             manifest = json.load(f)
         simple = manifest["variables"]["simple"]
         assert isinstance(simple, dict), "simple should use the rich dict format"
+
+
+# ---------------------------------------------------------------------------
+# Lead time presets + event2_* shortcuts
+# ---------------------------------------------------------------------------
+
+
+class TestConfigDefaults:
+    def test_minutes_before_default_is_short_lead_time(self):
+        manifest_path = Path(__file__).parent.parent / "manifest.json"
+        with open(manifest_path) as f:
+            manifest = json.load(f)
+        settings = manifest["settings_schema"]["properties"]
+        assert settings["minutes_before"]["default"] == 5, \
+            "Lead time should default to 5 minutes (was 15 before presets)"
+
+    def test_minutes_before_uses_enum_preset(self):
+        manifest_path = Path(__file__).parent.parent / "manifest.json"
+        with open(manifest_path) as f:
+            manifest = json.load(f)
+        prop = manifest["settings_schema"]["properties"]["minutes_before"]
+        assert "enum" in prop, "minutes_before should declare an enum preset list"
+        assert prop["default"] in prop["enum"], "default must be one of the preset values"
+        assert len(prop.get("enumNames", [])) == len(prop["enum"]), \
+            "enumNames should be parallel to enum so the UI can render labels"
+
+    def test_display_duration_default_is_finite(self):
+        manifest_path = Path(__file__).parent.parent / "manifest.json"
+        with open(manifest_path) as f:
+            manifest = json.load(f)
+        prop = manifest["settings_schema"]["properties"]["display_duration_minutes"]
+        # 0 still means "until next page" — keep the option, but default to a
+        # finite value so the alert clears itself after the event ends.
+        assert prop["default"] > 0, "default should be a finite stay-on-board value"
+        assert 0 in prop["enum"], "0 (until next page) must still be selectable"
+
+
+class TestEvent2Shortcuts:
+    @patch("calendar_sub.requests.get")
+    def test_event2_populated_when_two_events(self, mock_get, sample_manifest, sample_config):
+        mock_get.return_value = _make_mock_response(MULTI_EVENT_ICS)
+        plugin = CalendarSubPlugin(sample_manifest)
+        plugin.config = {**sample_config, "timezone": "UTC"}
+        result = plugin.fetch_data()
+
+        # Sorted by time: events[0] = Morning Assembly, events[1] = Science Fair
+        assert result.data["event2_name"] == "Science Fair"
+        assert result.data["event2_start"] == result.data["events"][1]["start"]
+        assert result.data["event2_start_date"] == result.data["events"][1]["start_date"]
+        assert result.data["event2_end"] == result.data["events"][1]["end"]
+        # The next-event shortcut should still point at the first event.
+        assert result.data["event_name"] == "Morning Assembly"
+
+    @patch("calendar_sub.requests.get")
+    def test_event2_empty_when_only_one_event(self, mock_get, sample_manifest, sample_config):
+        mock_get.return_value = _make_mock_response(SINGLE_EVENT_ICS)
+        plugin = CalendarSubPlugin(sample_manifest)
+        plugin.config = {**sample_config, "timezone": "UTC"}
+        result = plugin.fetch_data()
+
+        assert result.data["event2_name"] == ""
+        assert result.data["event2_start"] == ""
+        assert result.data["event2_start_date"] == ""
+        assert result.data["event2_end"] == ""
+        assert result.data["event2_location"] == ""
+
+    @patch("calendar_sub.requests.get")
+    def test_event2_empty_when_no_events(self, mock_get, sample_manifest, sample_config):
+        mock_get.return_value = _make_mock_response(EMPTY_CALENDAR_ICS)
+        plugin = CalendarSubPlugin(sample_manifest)
+        plugin.config = {**sample_config, "timezone": "UTC"}
+        result = plugin.fetch_data()
+
+        assert result.data["event2_name"] == ""
+        assert result.data["event2_start"] == ""
+
+    def test_event2_variables_declared_in_manifest(self):
+        manifest_path = Path(__file__).parent.parent / "manifest.json"
+        with open(manifest_path) as f:
+            manifest = json.load(f)
+        simple = manifest["variables"]["simple"]
+        # The variable picker only surfaces variables declared here, so these
+        # need to be listed alongside event_* to be discoverable.
+        for key in ("event2_name", "event2_start", "event2_start_date", "event2_end", "event2_location"):
+            assert key in simple, f"event2 shortcut '{key}' must be declared in manifest variables"
+            assert simple[key]["group"] == "upcoming", \
+                f"'{key}' should sit in the 'upcoming' group, not 'next_event'"

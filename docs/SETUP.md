@@ -21,9 +21,10 @@ In the FiestaBoard web UI, go to **Integrations**, find **Calendar Subscription*
 Click **Configure** and fill in:
 
 - **Calendar URL** — Paste your `.ics` or `webcal://` URL (see "Getting Your Calendar URL" below)
-- **Minutes Before Event** — How early to show the board alert (e.g., `15` for 15 minutes before)
-- **Display Duration** — How long the alert stays on screen; set `0` to keep it until the next scheduled page
+- **Lead Time** — How early to show the board alert (pick one of `1`/`2`/`3`/`5`/`10`/`15`/`30`/`60` min). The alert page re-renders every minute, so `{{minutes_until}}` naturally counts down.
+- **Stay On Board** — How long the alert remains on the board after the event ends (pick one of `5`/`10`/`15`/`30`/`60`/`120` min, or `Until next page` to leave it up indefinitely)
 - **Timezone** — Your local IANA timezone (e.g., `America/New_York`, `America/Los_Angeles`)
+- **Trigger Page** *(optional)* — Pick the template page (from a dropdown) to display when the alert fires. Leave at "None" to use the built-in 6-line display. The page must use `{{calendar_sub.*}}` variables.
 
 ### 3. Add a Template
 
@@ -93,20 +94,25 @@ Many schools and organizations publish calendar feeds directly. Look for links l
 | `{{minutes_until}}` | Minutes until event | `10` |
 | `{{is_now}}` | Event in progress now | `false` |
 | `{{event_count}}` | Number of upcoming events | `3` |
-| `{{events[0].name}}` | First event name | `Weekly Standup` |
-| `{{events[0].start}}` | First event start time | `9:00 AM` |
-| `{{events[0].start_date}}` | First event date | `Apr 7` |
+| `{{event2_name}}` | Name of the event *after* the next one | `Design Review` |
+| `{{event2_start}}` | Start time of the event after the next one | `4:00 PM` |
+| `{{event2_start_date}}` | Start date of the event after the next one | `Apr 7` |
+| `{{events.0.name}}` | First event name (same as `event_name`) | `Weekly Standup` |
+| `{{events.0.start}}` | First event start time | `9:00 AM` |
+| `{{events.0.start_date}}` | First event date | `Apr 7` |
+| `{{events.N.field}}` | Index into the events array — `N` is 0-based, capped at `max_events` | `{{events.2.name}}` |
 
 ## Configuration Reference
 
 | Setting | Description | Default | Range |
 |---------|-------------|---------|-------|
 | `calendar_url` | Public .ics or webcal:// URL | Required | — |
-| `minutes_before` | Minutes before event to trigger | `15` | 1–1440 |
-| `display_duration_minutes` | Trigger display duration (0 = indefinite) | `0` | 0–120 |
+| `minutes_before` | Lead time before an event | `5` | 1, 2, 3, 5, 10, 15, 30, 60 |
+| `display_duration_minutes` | How long alert stays after event ends (0 = until next page) | `15` | 0, 5, 10, 15, 30, 60, 120 |
 | `timezone` | IANA timezone name | `America/Los_Angeles` | any valid IANA zone |
 | `max_events` | Max upcoming events to load | `5` | 1–20 |
 | `refresh_seconds` | Re-fetch interval in seconds | `300` | 60+ |
+| `trigger_page_id` | UUID of the template page to render when a trigger fires (picked from a dropdown) | — | any of your template pages |
 
 ### Environment Variables
 

@@ -278,6 +278,12 @@ class CalendarSubPlugin(PluginBase):
         minutes_until = int((start - now).total_seconds() / 60)
         is_now = start <= now <= end
 
+        # event2_* flat shortcuts for the event after the next one — the
+        # common "now / next" pattern. For longer lists, users index into
+        # the events array: {{calendar_sub.events.2.name}} etc.
+        next_index = next((i for i, e in enumerate(events) if e is next_event), 0)
+        second = events[next_index + 1] if next_index + 1 < len(events) else None
+
         return {
             "event_name": next_event["name"][:22],
             "event_start": next_event["start"],
@@ -288,6 +294,11 @@ class CalendarSubPlugin(PluginBase):
             "minutes_until": str(minutes_until),
             "is_now": "true" if is_now else "false",
             "event_count": str(len(events)),
+            "event2_name": second["name"][:22] if second else "",
+            "event2_start": second["start"] if second else "",
+            "event2_start_date": second["start_date"] if second else "",
+            "event2_end": second["end"] if second else "",
+            "event2_location": second["location"][:22] if second else "",
             "events": [
                 {
                     "name": e["name"][:22],
@@ -312,6 +323,11 @@ class CalendarSubPlugin(PluginBase):
             "minutes_until": "",
             "is_now": "false",
             "event_count": "0",
+            "event2_name": "",
+            "event2_start": "",
+            "event2_start_date": "",
+            "event2_end": "",
+            "event2_location": "",
             "events": [],
         }
 
