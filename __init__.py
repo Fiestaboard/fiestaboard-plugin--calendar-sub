@@ -256,7 +256,7 @@ class CalendarSubPlugin(PluginBase):
             "uid": uid,
             "name": summary,
             "location": location,
-            "description": description[:22],
+            "description": description,
             "start_dt": start_dt,
             "end_dt": end_dt,
             "start_raw": str(start_raw),
@@ -285,27 +285,27 @@ class CalendarSubPlugin(PluginBase):
         second = events[next_index + 1] if next_index + 1 < len(events) else None
 
         return {
-            "event_name": next_event["name"][:22],
+            "event_name": next_event["name"],
             "event_start": next_event["start"],
             "event_start_date": next_event["start_date"],
             "event_end": next_event["end"],
-            "event_location": next_event["location"][:22],
+            "event_location": next_event["location"],
             "event_description": next_event["description"],
             "minutes_until": str(minutes_until),
             "is_now": "true" if is_now else "false",
             "event_count": str(len(events)),
-            "event2_name": second["name"][:22] if second else "",
+            "event2_name": second["name"] if second else "",
             "event2_start": second["start"] if second else "",
             "event2_start_date": second["start_date"] if second else "",
             "event2_end": second["end"] if second else "",
-            "event2_location": second["location"][:22] if second else "",
+            "event2_location": second["location"] if second else "",
             "events": [
                 {
-                    "name": e["name"][:22],
+                    "name": e["name"],
                     "start": e["start"],
                     "start_date": e["start_date"],
                     "end": e["end"],
-                    "location": e["location"][:22],
+                    "location": e["location"],
                 }
                 for e in events
             ],

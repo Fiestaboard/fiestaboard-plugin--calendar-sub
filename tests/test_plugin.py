@@ -163,8 +163,8 @@ class TestFetchData:
         assert result.available is True
         assert result.error is None
         assert result.data is not None
-        # "Parent Teacher Conference" is 25 chars, truncated to 22
-        assert result.data["event_name"] == "Parent Teacher Confere"
+        # Full string is returned; truncation belongs in the template.
+        assert result.data["event_name"] == "Parent Teacher Conference"
         assert result.data["event_location"] == "Room 204"
 
     @patch("calendar_sub.requests.get")
