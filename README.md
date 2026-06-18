@@ -10,6 +10,8 @@ The Calendar Subscription plugin fetches any public `.ics` calendar URL (Google 
 
 Recurring events (weekly meetings, classes, etc.) are fully expanded, so every occurrence shows up correctly. Both `https://` and `webcal://` URL formats are supported.
 
+The board-takeover behavior is **optional**: leave **Take Over the Board for Events** on for automatic alerts, or turn it off to expose the calendar's variables to your own pages without ever interrupting the board — handy for long events or conditional/Collection layouts.
+
 ## Template Variables
 
 ### Next Event
@@ -100,6 +102,7 @@ An indexed slot that falls past the end of the list renders as `???` — keep
 | Setting | Description | Default |
 |---------|-------------|---------|
 | `calendar_url` | Public .ics or webcal:// URL (**required**) | — |
+| `enable_triggers` | Take over the board to show events. Turn **off** to expose variables only — no board interruption (great for long events or conditional/Collection layouts). The settings below only apply when this is on. | `true` |
 | `minutes_before` | Lead time before an event — picks one of 1/2/3/5/10/15/30/60 min | `5` |
 | `display_duration_minutes` | How long the alert stays on the board after the event ends — picks one of 0 (until next page) / 5 / 10 / 15 / 30 / 60 / 120 min | `15` |
 | `timezone` | IANA timezone for all-day events and time display | `America/Los_Angeles` |
@@ -121,6 +124,7 @@ An indexed slot that falls past the end of the list renders as `???` — keep
 - **Recurring events**: Fully expands RRULE-based recurring events (weekly meetings, classes, etc.)
 - **All-day events**: Displays all-day events with "All Day" instead of a time
 - **Event triggers**: Automatically interrupts the board display when an event is approaching
+- **Optional takeover**: Turn triggers off to use the event variables in your own pages without ever interrupting the board
 - **Configurable alert window**: Set `minutes_before` to get alerts 5, 15, 30+ minutes in advance
 - **Flexible display duration**: Set how long the alert stays on the board, or leave it up until the next scheduled page
 - **Multi-event template support**: Access up to 20 upcoming events as template variables for custom layouts
