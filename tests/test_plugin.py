@@ -510,6 +510,102 @@ class TestCheckTriggers:
 
 
 # ---------------------------------------------------------------------------
+# enable_triggers toggle (issue #1161)
+# ---------------------------------------------------------------------------
+
+
+class TestEnableTriggersToggle:
+    """The ``enable_triggers`` config gates board-takeover triggers.
+
+    When off, the plugin keeps exposing template variables (so they can drive
+    a display via conditional/Collection logic) but never interrupts the board.
+    """
+
+    def _ics_event_in_window(self, minutes_offset: int = 10) -> str:
+        now = datetime.now(pytz.UTC)
+        start = now + timedelta(minutes=minutes_offset)
+        end = start + timedelta(hours=1)
+        return (
+            "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Test//Test//EN\n"
+            "BEGIN:VEVENT\nUID:toggle-evt@test\nSUMMARY:Toggle Meeting\n"
+            f"DTSTART:{start.strftime('%Y%m%dT%H%M%SZ')}\n"
+            f"DTEND:{end.strftime('%Y%m%dT%H%M%SZ')}\n"
+            "END:VEVENT\nEND:VCALENDAR\n"
+        )
+
+    @patch("calendar_sub.requests.get")
+    def test_triggers_fire_by_default_when_setting_absent(self, mock_get, sample_manifest, sample_config):
+        """Backward-compat: omitting enable_triggers keeps triggers on."""
+        mock_get.return_value = _make_mock_response(self._ics_event_in_window())
+        plugin = CalendarSubPlugin(sample_manifest)
+        cfg = {**sample_config, "timezone": "UTC", "minutes_before": 15}
+        cfg.pop("enable_triggers", None)
+        plugin.config = cfg
+        plugin.fetch_data()
+        results = plugin.check_triggers()
+        assert any(r.triggered for r in results)
+
+    @patch("calendar_sub.requests.get")
+    def test_triggers_fire_when_enabled(self, mock_get, sample_manifest, sample_config):
+        mock_get.return_value = _make_mock_response(self._ics_event_in_window())
+        plugin = CalendarSubPlugin(sample_manifest)
+        plugin.config = {
+            **sample_config, "timezone": "UTC", "minutes_before": 15, "enable_triggers": True
+        }
+        plugin.fetch_data()
+        results = plugin.check_triggers()
+        assert any(r.triggered for r in results)
+
+    @patch("calendar_sub.requests.get")
+    def test_no_triggers_when_disabled(self, mock_get, sample_manifest, sample_config):
+        """enable_triggers=False suppresses the pre-event (lead-in) trigger."""
+        mock_get.return_value = _make_mock_response(self._ics_event_in_window())
+        plugin = CalendarSubPlugin(sample_manifest)
+        plugin.config = {
+            **sample_config, "timezone": "UTC", "minutes_before": 15, "enable_triggers": False
+        }
+        plugin.fetch_data()
+        results = plugin.check_triggers()
+        assert results == []
+
+    @patch("calendar_sub.requests.get")
+    def test_no_triggers_when_disabled_for_in_progress_event(self, mock_get, sample_manifest, sample_config):
+        """A long, in-progress event must not take over the board when disabled.
+
+        This is the headline case from issue #1161: the ``is_now`` branch
+        otherwise re-fires for the entire event duration.
+        """
+        now = datetime.now(pytz.UTC)
+        start = now - timedelta(minutes=5)
+        end = now + timedelta(hours=4)
+        ics = (
+            "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Test//Test//EN\n"
+            "BEGIN:VEVENT\nUID:inprogress@test\nSUMMARY:Long Meeting\n"
+            f"DTSTART:{start.strftime('%Y%m%dT%H%M%SZ')}\n"
+            f"DTEND:{end.strftime('%Y%m%dT%H%M%SZ')}\n"
+            "END:VEVENT\nEND:VCALENDAR\n"
+        )
+        mock_get.return_value = _make_mock_response(ics)
+        plugin = CalendarSubPlugin(sample_manifest)
+        plugin.config = {**sample_config, "timezone": "UTC", "enable_triggers": False}
+        plugin.fetch_data()
+        results = plugin.check_triggers()
+        assert results == []
+
+    @patch("calendar_sub.requests.get")
+    def test_variables_available_when_triggers_disabled(self, mock_get, sample_manifest, sample_config):
+        """Disabling triggers must NOT affect template variables (the core ask)."""
+        mock_get.return_value = _make_mock_response(self._ics_event_in_window())
+        plugin = CalendarSubPlugin(sample_manifest)
+        plugin.config = {**sample_config, "timezone": "UTC", "enable_triggers": False}
+        result = plugin.fetch_data()
+
+        assert result.available is True
+        assert result.data["event_name"] == "Toggle Meeting"
+        assert int(result.data["event_count"]) >= 1
+
+
+# ---------------------------------------------------------------------------
 # Formatted display
 # ---------------------------------------------------------------------------
 
@@ -606,6 +702,20 @@ class TestManifestMetadata:
         with open(manifest_path) as f:
             manifest = json.load(f)
         assert manifest.get("supports_triggers") is True
+
+    def test_enable_triggers_setting_declared_and_defaults_true(self):
+        """The toggle must be declared so the UI renders it, defaulting to on
+        to preserve behavior for existing installs (issue #1161)."""
+        manifest_path = Path(__file__).parent.parent / "manifest.json"
+        with open(manifest_path) as f:
+            manifest = json.load(f)
+        props = manifest["settings_schema"]["properties"]
+        assert "enable_triggers" in props, \
+            "enable_triggers must be declared so the UI shows the toggle"
+        et = props["enable_triggers"]
+        assert et["type"] == "boolean"
+        assert et["default"] is True, \
+            "default must keep current behavior (triggers on) for existing installs"
 
     def test_screenshot_primary_entry(self):
         manifest_path = Path(__file__).parent.parent / "manifest.json"

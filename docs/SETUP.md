@@ -21,6 +21,7 @@ In the FiestaBoard web UI, go to **Integrations**, find **Calendar Subscription*
 Click **Configure** and fill in:
 
 - **Calendar URL** — Paste your `.ics` or `webcal://` URL (see "Getting Your Calendar URL" below)
+- **Take Over the Board for Events** — Leave **on** for automatic alerts that switch the board to upcoming events. Turn **off** to use the calendar's variables in your own pages without ever interrupting the board (ideal for long events or conditional/Collection layouts). The three settings below only apply when this is on.
 - **Lead Time** — How early to show the board alert (pick one of `1`/`2`/`3`/`5`/`10`/`15`/`30`/`60` min). The alert page re-renders every minute, so `{{minutes_until}}` naturally counts down.
 - **Stay On Board** — How long the alert remains on the board after the event ends (pick one of `5`/`10`/`15`/`30`/`60`/`120` min, or `Until next page` to leave it up indefinitely)
 - **Timezone** — Your local IANA timezone (e.g., `America/New_York`, `America/Los_Angeles`)
@@ -107,7 +108,8 @@ Many schools and organizations publish calendar feeds directly. Look for links l
 | Setting | Description | Default | Range |
 |---------|-------------|---------|-------|
 | `calendar_url` | Public .ics or webcal:// URL | Required | — |
-| `minutes_before` | Lead time before an event | `5` | 1, 2, 3, 5, 10, 15, 30, 60 |
+| `enable_triggers` | Take over the board to show events. Off = variables only, no interruption | `true` | true / false |
+| `minutes_before` | Lead time before an event (only applies when `enable_triggers` is on) | `5` | 1, 2, 3, 5, 10, 15, 30, 60 |
 | `display_duration_minutes` | How long alert stays after event ends (0 = until next page) | `15` | 0, 5, 10, 15, 30, 60, 120 |
 | `timezone` | IANA timezone name | `America/Los_Angeles` | any valid IANA zone |
 | `max_events` | Max upcoming events to load | `5` | 1–20 |
@@ -138,9 +140,13 @@ You can optionally set the calendar URL via environment variable instead of the 
 - All-day events always show as "All Day" regardless of timezone
 
 **Trigger not firing**
-- Check that **Minutes Before Event** is set to a value greater than 0
+- Make sure **Take Over the Board for Events** is turned **on** — with it off, the plugin only exposes variables and never interrupts the board
+- Check that **Lead Time** is set to a value greater than 0
 - The trigger fires within the configured window before each event starts
 - Events that are already past will not trigger
+
+**I want the variables but not the board takeover**
+- Turn **Take Over the Board for Events** off. The `{{calendar_sub.*}}` variables stay available for your own pages, but the board is never interrupted — useful for long events or conditional/Collection layouts
 
 **"Calendar URL is required" error**
 - Make sure the URL field is not empty

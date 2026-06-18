@@ -1,7 +1,7 @@
 {
   "id": "calendar_sub",
   "name": "Calendar Subscription",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "Subscribe to a public iCalendar (.ics) URL and display upcoming events on your board.",
   "author": "FiestaBoard Team",
   "repository": "https://github.com/FiestaBoard/FiestaBoard",
@@ -18,6 +18,12 @@
         "title": "Calendar URL",
         "description": "Public iCalendar (.ics) subscription URL. Supports https:// and webcal:// formats.",
         "ui:widget": "url"
+      },
+      "enable_triggers": {
+        "type": "boolean",
+        "title": "Take Over the Board for Events",
+        "description": "When on, the board automatically switches to show an event before it starts (and stays on per the settings below). Turn this off to use the calendar's {{calendar_sub.*}} variables in your own pages without ever interrupting the board — useful for long events or conditional/Collection layouts.",
+        "default": true
       },
       "minutes_before": {
         "type": "integer",

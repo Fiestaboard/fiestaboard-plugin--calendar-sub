@@ -142,8 +142,19 @@ class CalendarSubPlugin(PluginBase):
     # ------------------------------------------------------------------
 
     def check_triggers(self) -> List[TriggerResult]:
-        """Fire triggers for events starting within the configured window."""
+        """Fire triggers for events starting within the configured window.
+
+        Board-takeover triggers are opt-out via the ``enable_triggers``
+        setting (issue #1161). When disabled, the plugin still exposes its
+        template variables through :meth:`fetch_data`; it just never
+        interrupts the board, so those variables can drive a display via
+        conditional/Collection logic instead — and long events no longer
+        hold the board for their entire duration.
+        """
         results: List[TriggerResult] = []
+
+        if not self.config.get("enable_triggers", True):
+            return results
 
         # Use cached events if available to avoid extra HTTP calls
         if not self._events_cache:
