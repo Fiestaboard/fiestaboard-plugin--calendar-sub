@@ -30,16 +30,50 @@
         "title": "Lead Time",
         "description": "How many minutes before an event starts to begin showing the alert. The triggered page re-renders each minute so {{calendar_sub.minutes_until}} naturally counts down to 0.",
         "default": 5,
-        "enum": [1, 2, 3, 5, 10, 15, 30, 60],
-        "enumNames": ["1 min before", "2 min before", "3 min before", "5 min before", "10 min before", "15 min before", "30 min before", "1 hr before"]
+        "enum": [
+          1,
+          2,
+          3,
+          5,
+          10,
+          15,
+          30,
+          60
+        ],
+        "enumNames": [
+          "1 min before",
+          "2 min before",
+          "3 min before",
+          "5 min before",
+          "10 min before",
+          "15 min before",
+          "30 min before",
+          "1 hr before"
+        ]
       },
       "display_duration_minutes": {
         "type": "integer",
         "title": "Stay On Board",
         "description": "How long the alert page stays on the board after the event window ends. 'Until next page' leaves it up indefinitely.",
         "default": 15,
-        "enum": [0, 5, 10, 15, 30, 60, 120],
-        "enumNames": ["Until next page", "5 min", "10 min", "15 min", "30 min", "1 hr", "2 hr"]
+        "enum": [
+          0,
+          5,
+          10,
+          15,
+          30,
+          60,
+          120
+        ],
+        "enumNames": [
+          "Until next page",
+          "5 min",
+          "10 min",
+          "15 min",
+          "30 min",
+          "1 hr",
+          "2 hr"
+        ]
       },
       "timezone": {
         "type": "string",
@@ -227,6 +261,28 @@
       "alt": "Calendar Subscription displayed on a Vestaboard",
       "caption": "Upcoming event triggered on the board before the event starts",
       "primary": true
+    }
+  ],
+  "teaser": "APR 3 3:30 PM",
+  "previews": [
+    {
+      "device_type": "flagship",
+      "rows": [
+        "      Next Event",
+        "    Parent Teacher",
+        "        Apr 3",
+        "       3:30 PM",
+        "       Room 204",
+        "      In 10 min"
+      ]
+    },
+    {
+      "device_type": "note",
+      "rows": [
+        "Parent Teacher",
+        "Apr 3",
+        "3:30 PM"
+      ]
     }
   ],
   "demo": {
