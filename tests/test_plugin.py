@@ -390,6 +390,27 @@ class TestCheckTriggers:
         assert len(triggered[0].formatted_lines) == 6
 
     @patch("calendar_sub.requests.get")
+    def test_config_change_invalidates_event_cache(self, mock_get, sample_manifest, sample_config):
+        """A new calendar_url must not keep firing the old calendar's triggers."""
+        old_ics = self._ics_with_event(minutes_offset=10, uid="old-cal@test",
+                                       summary="Old Calendar Meeting")
+        mock_get.return_value = _make_mock_response(old_ics)
+        plugin = CalendarSubPlugin(sample_manifest)
+        plugin.config = {**sample_config, "timezone": "UTC", "minutes_before": 15}
+        plugin.fetch_data()
+        assert plugin._events_cache
+
+        # Point at a different calendar whose only event is far in the future
+        new_ics = self._ics_with_event(minutes_offset=300, uid="new-cal@test",
+                                       summary="New Calendar Meeting")
+        mock_get.return_value = _make_mock_response(new_ics)
+        plugin.config = {**sample_config, "timezone": "UTC", "minutes_before": 15,
+                         "calendar_url": "https://example.com/other.ics"}
+        assert plugin._events_cache == []
+
+        assert [r for r in plugin.check_triggers() if r.triggered] == []
+
+    @patch("calendar_sub.requests.get")
     def test_trigger_does_not_fire_outside_window(self, mock_get, sample_manifest, sample_config):
         """An event far in the future should not fire a trigger."""
         ics = self._ics_with_event(minutes_offset=300, uid="future-event@test",
