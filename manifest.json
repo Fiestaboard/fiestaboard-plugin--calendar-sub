@@ -1,7 +1,7 @@
 {
   "id": "calendar_sub",
   "name": "Calendar Subscription",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Subscribe to a public iCalendar (.ics) URL and display upcoming events on your board.",
   "author": "FiestaBoard Team",
   "repository": "https://github.com/FiestaBoard/FiestaBoard",

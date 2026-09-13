@@ -107,6 +107,17 @@ class CalendarSubPlugin(PluginBase):
         errors.extend(self._validate_refresh_seconds(config))
         return errors
 
+    def on_config_change(self, old_config: Dict[str, Any], new_config: Dict[str, Any]) -> None:
+        """Forget cached events so a config change takes effect immediately.
+
+        check_triggers() reuses _events_cache whenever it is non-empty and
+        only refills it when empty, so without this a new `calendar_url`
+        would keep firing triggers for the previous calendar's events until
+        the next fetch_data() replaced them.
+        """
+        self._events_cache = []
+        logger.debug("Cleared cached events after config change")
+
     # ------------------------------------------------------------------
     # Data fetching
     # ------------------------------------------------------------------
