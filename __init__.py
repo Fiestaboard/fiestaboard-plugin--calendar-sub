@@ -18,6 +18,7 @@ import requests
 from icalendar import Calendar
 
 from src.plugins.base import PluginBase, PluginResult, TriggerResult
+from src.text_to_board import count_tiles, take_tiles
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,28 @@ _LOOK_AHEAD_DAYS = 30
 
 # Duration used when display_duration_minutes is 0 ("stay until overwritten")
 _INDEFINITE_DURATION_SECONDS = 86400
+
+# Fallback geometry when no board is bound (self.board is None) -- matches
+# the Flagship, the device every board-agnostic caller historically assumed.
+_DEFAULT_ROWS = 6
+_DEFAULT_COLS = 22
+
+
+def _center(text: str, width: int) -> str:
+    """Center *text* in a field *width* tiles wide, truncating if needed.
+
+    Tile-aware (via count_tiles/take_tiles) rather than character-based, so
+    a color marker would cost one tile, not several characters -- matching
+    how the board itself measures width. This plugin's own text has no such
+    markers today, but the helper is safe if that ever changes.
+    """
+    if width <= 0:
+        return ""
+    text, _ = take_tiles(text, width)
+    pad = width - count_tiles(text)
+    left = pad // 2
+    right = pad - left
+    return (" " * left) + text + (" " * right)
 
 
 def _normalize_url(url: str) -> str:
@@ -353,82 +376,158 @@ class CalendarSubPlugin(PluginBase):
             "events": [],
         }
 
+    def _board_dims(self) -> tuple:
+        """Effective (rows, cols) for the board being rendered.
+
+        ``self.board`` is ``None`` outside a board-scoped render (unit
+        tests, legacy callers); treat that as a Flagship rather than
+        crashing or guessing. Every layout decision below derives from
+        these two numbers -- there is no dimension literal past this point.
+        """
+        board = self.board
+        if board is None:
+            return _DEFAULT_ROWS, _DEFAULT_COLS
+        return board.rows, board.cols
+
+    @staticmethod
+    def _timing_text(minutes_until: Any, is_now: bool = False) -> str:
+        """Human-readable countdown, or '' when there is nothing to say."""
+        if is_now:
+            return "HAPPENING NOW"
+        try:
+            mins = int(minutes_until)
+        except (TypeError, ValueError):
+            return ""
+        if mins <= 0:
+            return "NOW"
+        if mins < 60:
+            return f"IN {mins} MIN"
+        return f"IN {mins // 60} HR"
+
+    def _event_field_lines(
+        self, index: int, event: Dict[str, Any], data: Dict[str, Any]
+    ) -> List[str]:
+        """Ordered, board-agnostic candidate lines describing one event.
+
+        Ordered most-important-first: name, then when, then where/until.
+        ``_render_event_lines`` takes a prefix of this per event depending
+        on how many rows are available, so the order here IS the reflow
+        priority -- callers never need a board size to decide what to drop.
+        """
+        name = (event.get("name") or "").upper()
+        date_str = (event.get("start_date") or "").upper()
+        time_str = (event.get("start") or "").upper()
+        date_time = f"{date_str}  {time_str}".strip()
+        location = (event.get("location") or "").upper()
+        end = (event.get("end") or "").upper()
+
+        fields = [name, date_time]
+        if location:
+            fields.append(location)
+        if index == 0:
+            timing = self._timing_text(data.get("minutes_until"), data.get("is_now") == "true")
+            if timing:
+                fields.append(timing)
+        if end:
+            fields.append(f"UNTIL {end}")
+        return fields
+
+    def _render_event_lines(
+        self, events: List[Dict[str, Any]], budget: int, cols: int, data: Dict[str, Any]
+    ) -> List[str]:
+        """Fill up to *budget* rows from *events*, most-important-first.
+
+        Flattens each event's field list (name, when, where, ...) in order
+        and concatenates event-by-event, so the result is a fixed sequence
+        independent of *budget* -- taking more of it is always a strict
+        extension of taking less. That is what makes growth monotonic: a
+        taller board (bigger budget) can only reveal the SAME events in
+        more detail or additional events entirely, never something
+        unrelated to what a shorter board already showed.
+        """
+        if budget <= 0 or not events:
+            return []
+        sequence: List[str] = []
+        for i, event in enumerate(events):
+            sequence.extend(self._event_field_lines(i, event, data))
+        return [_center(text, cols) for text in sequence[:budget]]
+
+    def _empty_display(self, rows: int, cols: int) -> List[str]:
+        """Board lines for 'no upcoming events', sized to the board."""
+        message = "NO UPCOMING EVENTS" if cols >= len("NO UPCOMING EVENTS") else "NO EVENTS"
+        lines = [_center("CALENDAR", cols)]
+        if rows >= 3:
+            lines.append("")
+        lines.append(_center(message, cols))
+        while len(lines) < rows:
+            lines.append("")
+        return lines[:rows]
+
     def _format_display(self, data: Dict[str, Any]) -> List[str]:
-        """Format template data into 6 board lines (22 chars max each)."""
+        """Format template data into board lines sized to ``self.board``.
+
+        Reflows instead of truncating: a taller board shows more events (or
+        more detail about the ones already shown) rather than padding with
+        blank rows, and a wider board gets less-truncated labels instead of
+        a fixed 22-character cut. See ``_render_event_lines``.
+        """
+        rows, cols = self._board_dims()
+
         if data.get("event_count") == "0" or not data.get("event_name"):
-            lines = [
-                "CALENDAR".center(22),
-                "",
-                "NO UPCOMING EVENTS".center(22),
-                "",
-                "",
-                "",
-            ]
-        else:
-            name = data["event_name"].upper()
-            date_str = data["event_start_date"].upper()
-            time_str = data["event_start"].upper()
-            location = data["event_location"].upper()
-            minutes = data.get("minutes_until", "")
+            return self._empty_display(rows, cols)
 
-            date_time = f"{date_str}  {time_str}".strip()
+        events = data.get("events") or []
+        lines: List[str] = []
 
-            try:
-                mins = int(minutes)
-                if mins <= 0:
-                    timing = "NOW"
-                elif mins < 60:
-                    timing = f"IN {mins} MIN"
-                else:
-                    hours = mins // 60
-                    timing = f"IN {hours} HR"
-            except (ValueError, TypeError):
-                timing = ""
+        # A header costs a whole row; on a 3-row Note that is a third of
+        # the board, so skip it there and spend every row on content.
+        if rows >= 4:
+            header = "UPCOMING EVENTS" if len(events) > 1 else "UPCOMING EVENT"
+            lines.append(_center(header, cols))
 
-            lines = [
-                "UPCOMING EVENT".center(22),
-                name[:22].center(22),
-                "",
-                date_time[:22].center(22),
-                location[:22].center(22) if location else "",
-                timing.center(22) if timing else "",
-            ]
-
-        return lines[:6]
+        lines.extend(self._render_event_lines(events, rows - len(lines), cols, data))
+        return lines[:rows]
 
     def _format_trigger_display(
         self, event: Dict[str, Any], now: datetime, is_now: bool
     ) -> List[str]:
-        """Format a 6-line board display for a trigger notification."""
-        name = event["name"].upper()
-        date_str = event["start_date"].upper()
-        time_str = event["start"].upper()
-        location = event["location"].upper()
+        """Format a board display for a trigger notification, sized to ``self.board``.
 
+        Single-event, so "reflow" here means more per-event detail on a
+        taller board (description/location/end time) rather than more rows
+        of blank padding -- there is nothing else to list.
+        """
+        rows, cols = self._board_dims()
+
+        name = (event.get("name") or "").upper()
+        date_str = (event.get("start_date") or "").upper()
+        time_str = (event.get("start") or "").upper()
         date_time = f"{date_str}  {time_str}".strip()
+        location = (event.get("location") or "").upper()
+        end = (event.get("end") or "").upper()
 
         if is_now:
-            header = "EVENT STARTING NOW".center(22)
-            timing = "HAPPENING NOW".center(22)
+            header = "EVENT STARTING NOW"
+            timing = "HAPPENING NOW"
         else:
-            header = "UPCOMING EVENT".center(22)
+            header = "UPCOMING EVENT"
             start = event["start_dt"]
             minutes_until = int((start - now).total_seconds() / 60)
-            if minutes_until < 60:
-                timing = f"IN {minutes_until} MINUTES".center(22)
-            else:
-                hours = minutes_until // 60
-                timing = f"IN {hours} HOURS".center(22)
+            timing = f"IN {minutes_until} MINUTES" if minutes_until < 60 else f"IN {minutes_until // 60} HOURS"
 
-        lines = [
-            header,
-            name[:22].center(22),
-            "",
-            date_time[:22].center(22),
-            location[:22].center(22) if location else "",
-            timing,
-        ]
-        return lines[:6]
+        fields = [header, name, date_time]
+        if location:
+            fields.append(location)
+        fields.append(timing)
+        if end:
+            fields.append(f"UNTIL {end}")
+
+        lines = [_center(text, cols) for text in fields[:rows]]
+        # A blank separator after the header reads better on a board with
+        # room to spare; only add it when it doesn't cost real content.
+        if len(lines) < rows:
+            lines.insert(1, "")
+        return lines[:rows]
 
 
 # Export the plugin class

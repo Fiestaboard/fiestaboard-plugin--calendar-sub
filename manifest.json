@@ -1,7 +1,7 @@
 {
   "id": "calendar_sub",
   "name": "Calendar Subscription",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Subscribe to a public iCalendar (.ics) URL and display upcoming events on your board.",
   "author": "FiestaBoard Team",
   "repository": "https://github.com/FiestaBoard/FiestaBoard",
@@ -282,6 +282,20 @@
         "{63}{63} CALENDAR",
         "PARENT TEACHER",
         "3:30 PM TODAY"
+      ]
+    },
+    {
+      "label": "Note Array (2 wide)",
+      "device_type": "note_array",
+      "notes_wide": 2,
+      "notes_tall": 2,
+      "rows": [
+        "       UPCOMING EVENTS",
+        "  PARENT TEACHER CONFERENCE",
+        "        APR 3  3:30 PM",
+        "           ROOM 204",
+        "           IN 10 MIN",
+        "         SCIENCE FAIR"
       ]
     }
   ],
